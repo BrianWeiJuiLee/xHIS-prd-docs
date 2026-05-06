@@ -6,6 +6,7 @@ author: "PM 範例"
 created: "2026-05-07"
 updated: "2026-05-07"
 status: "內部審核通過"
+is_example: true
 ---
 
 # 【範例】首頁工作清單 PRD
