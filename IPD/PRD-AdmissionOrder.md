@@ -7,6 +7,7 @@ created: "2026-05-07"
 updated: "2026-05-07"
 status: "內部審核通過"
 is_example: true
+generated_by: "ai-generated"
 ---
 
 # 【範例】住院入院開單作業 PRD
