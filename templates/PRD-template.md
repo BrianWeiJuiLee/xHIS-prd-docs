@@ -7,6 +7,7 @@ created: "YYYY-MM-DD"
 updated: "YYYY-MM-DD"
 status: "編輯中"
 is_example: false
+generated_by: "human"
 ---
 
 # [功能名稱] PRD

@@ -159,6 +159,7 @@ created: string              # 格式：YYYY-MM-DD
 updated: string              # 格式：YYYY-MM-DD（每次版本更新時修改）
 status: string               # 限定值見下方 8.2 節
 is_example: boolean          # true = 範例文件（不得作為研發依據）；false = 正式文件
+generated_by: string         # human | ai-assisted | ai-generated（見下方 8.6 節）
 ---
 ```
 
@@ -187,6 +188,16 @@ is_example: boolean          # true = 範例文件（不得作為研發依據）
 - 例：`PRD-PatientSearch.md`、`PRD-OrderEntry.md`
 - 放置位置：對應系統的資料夾（例如 `Register/PRD-PatientSearch.md`）
 
+### 8.6 generated_by 允許值
+
+| 值 | 意義 | 審核要求 |
+|----|-----|---------|
+| `human` | 由 PM 全人工撰寫 | 標準 review 流程 |
+| `ai-assisted` | PM 提供需求輸入，AI 協助結構化撰寫 | 標準 review 流程 |
+| `ai-generated` | AI 完全生成草稿，PM 審閱確認 | 進入「內部審核通過」前需 PM lead 完整審查 |
+
+---
+
 ### 8.5 版本號規則
 
 - **次版號（+0.1）**：局部修正、補充說明、錯字修訂
@@ -208,6 +219,7 @@ is_example: boolean          # true = 範例文件（不得作為研發依據）
 - 不確定的業務規則或技術細節，使用 `（待確認）` 標示，**不得自行推測或捏造**
 - 業務規則（BR）必須有明確來源（法規規定 / 客戶需求 / 系統設計決策），若來源不明需標示
 - 生成的 PRD 預設 `is_example: false`、`status: "編輯中"`
+- 透過 `/generate-prd-pipeline` 或 `/draft-prd` 生成的 PRD，`generated_by` 預設為 `ai-assisted`；若完全無人工輸入則設為 `ai-generated`
 - 任何涉及刪除病患資料、醫令、護理記錄的需求，**必須在 PRD 中說明這與台灣醫療法規的關係**
 
 ### 9.3 修改 PRD 時

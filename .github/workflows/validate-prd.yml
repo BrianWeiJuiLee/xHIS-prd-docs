@@ -1,0 +1,133 @@
+name: Validate PRD Structure
+
+on:
+  pull_request:
+    paths:
+      - '**/*.md'
+      - '!.claude/**'
+      - '!skills/**'
+      - '!templates/**'
+      - '!**/README.md'
+      - '!CLAUDE.md'
+
+jobs:
+  validate:
+    name: PRD Frontmatter & Structure Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install python-frontmatter
+
+      - name: Find changed PRD files
+        id: changed
+        run: |
+          git diff --name-only origin/${{ github.base_ref }}...HEAD \
+            | grep -E '^(Register|Billing|Declare|Referral|Pharmacy|OPD|ER|IPD|ERNIS|IPDNIS|Portal)/PRD-.+\.md$' \
+            > changed_prds.txt || true
+          echo "files=$(cat changed_prds.txt | tr '\n' ' ')" >> $GITHUB_OUTPUT
+          cat changed_prds.txt
+
+      - name: Validate PRD files
+        if: steps.changed.outputs.files != ''
+        run: |
+          python3 << 'PYEOF'
+          import sys
+          import re
+          import frontmatter
+
+          REQUIRED_FIELDS = ['title', 'system', 'version', 'author', 'created', 'updated', 'status', 'is_example']
+          VALID_STATUSES = ['編輯中', '內部審核通過', '外部審核通過', '實作中', '已上線']
+          REQUIRED_SECTIONS = [
+              ('## 1.', 'Change History'),
+              ('## 2.', 'Requirement Overview'),
+              ('## 3.', 'Business Flow Overview'),
+              ('## 4.', 'Data Flow Overview'),
+              ('## 5.', 'Use Cases'),
+              ('## 6.', 'Test Cases'),
+          ]
+          VALID_DATE_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
+          VALID_VERSION_RE = re.compile(r'^\d+\.\d+$')
+          VALID_SYSTEM_RE = re.compile(r'^(Register|Billing|Declare|Referral|Pharmacy|OPD|ER|IPD|ERNIS|IPDNIS|Portal) .+$')
+
+          errors = []
+
+          with open('changed_prds.txt') as f:
+              prd_files = [l.strip() for l in f if l.strip()]
+
+          for path in prd_files:
+              file_errors = []
+              try:
+                  post = frontmatter.load(path)
+                  meta = post.metadata
+                  body = post.content
+              except Exception as e:
+                  errors.append(f'{path}: Failed to parse frontmatter — {e}')
+                  continue
+
+              # Required fields
+              for field in REQUIRED_FIELDS:
+                  if field not in meta or meta[field] is None or str(meta[field]).strip() == '':
+                      file_errors.append(f'  Missing or empty field: `{field}`')
+
+              # Status enum
+              if 'status' in meta and meta['status'] not in VALID_STATUSES:
+                  file_errors.append(f'  Invalid status: `{meta["status"]}` — must be one of: {VALID_STATUSES}')
+
+              # is_example type check
+              if 'is_example' in meta and not isinstance(meta['is_example'], bool):
+                  file_errors.append(f'  `is_example` must be boolean (true/false), got: `{meta["is_example"]}`')
+
+              # Date format
+              for date_field in ['created', 'updated']:
+                  if date_field in meta and not VALID_DATE_RE.match(str(meta.get(date_field, ''))):
+                      file_errors.append(f'  `{date_field}` must be YYYY-MM-DD format')
+
+              # Version format
+              if 'version' in meta and not VALID_VERSION_RE.match(str(meta.get('version', ''))):
+                  file_errors.append(f'  `version` must be X.Y format (e.g. 1.0, 1.1, 2.0)')
+
+              # System code format
+              if 'system' in meta and not VALID_SYSTEM_RE.match(str(meta.get('system', ''))):
+                  file_errors.append(f'  `system` must start with a valid system code (Register, Billing, etc.)')
+
+              # Example title prefix
+              if meta.get('is_example') is True and not str(meta.get('title', '')).startswith('【範例】'):
+                  file_errors.append(f'  Example PRDs must have `title` starting with 【範例】')
+
+              # generated_by: warn if AI content but field missing
+              if 'generated_by' not in meta:
+                  file_errors.append(f'  Missing field: `generated_by` (use "human", "ai-assisted", or "ai-generated")')
+
+              # 6-section structure
+              for prefix, name in REQUIRED_SECTIONS:
+                  if prefix not in body:
+                      file_errors.append(f'  Missing section: `{prefix} ... {name}｜...`')
+
+              if file_errors:
+                  errors.append(f'\n❌ {path}:')
+                  errors.extend(file_errors)
+              else:
+                  print(f'✅ {path}')
+
+          if errors:
+              print('\n' + '\n'.join(errors))
+              print(f'\n{len([e for e in errors if e.startswith(chr(10) + "❌")])} file(s) failed validation.')
+              sys.exit(1)
+          else:
+              print(f'\nAll {len(prd_files)} PRD file(s) passed validation.')
+          PYEOF
+
+      - name: No PRD files changed
+        if: steps.changed.outputs.files == ''
+        run: echo "No PRD files changed in this PR — skipping validation."
