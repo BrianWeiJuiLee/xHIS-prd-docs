@@ -28,6 +28,24 @@
 | 🚧 實作中 | 研發團隊已接手，正在開發中 |
 | 🟢 已上線 | 功能已部署至正式環境 |
 
+## AI Skills｜PRD 輔助工具
+
+本 repo 內建 AI Skill，搭配 [Claude Code](https://claude.ai/code) 使用，clone repo 後即可在 Claude Code 中以指令呼叫。
+
+| Skill 指令 | 用途 |
+|-----------|-----|
+| `/draft-prd` | 從功能描述起草完整 PRD 草稿 |
+| `/review-prd` | 六維度 PRD 品質審查 |
+| `/gen-test-cases` | 從 Use Cases 自動產生 Test Cases |
+| `/extract-requirements` | 從會議紀錄 / 訪談稿萃取結構化需求 |
+| `/update-prd-status` | 更新 PRD 狀態與 Change History |
+| `/gen-flow-diagram` | 產生 Mermaid 業務流程圖 / 資料流程圖 |
+| `/translate-prd` | PRD 繁中 ↔ 英文互譯 |
+
+詳細說明與使用方式請參閱 [skills/README.md](./skills/README.md)。
+
+---
+
 ## 使用方式
 
 - **新增 PRD**：參考 [templates/PRD-template.md](./templates/PRD-template.md)，在對應系統資料夾建立新檔案，提交 Pull Request
